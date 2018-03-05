@@ -47,9 +47,7 @@ def merge_dfs_on_column(dataframes, labels, col):
          
     return pd.DataFrame(series_dict)
   
- 
- 
- 
+  
 def choose_timeframe(pediod):
     if pediod == 300:
         folder = "5_min/"
@@ -86,15 +84,97 @@ def alcoin_extract_from_poloniex(altcoins):
  
     return altcoin_data
  
- 
-def make_correlation_matrix(combined_df, show_correlation_matrix):
-    correlation_matrix = combined_df.corr(method='pearson')
-    print('\n',"Corrélation moyenne: ",(correlation_matrix.mean()).mean(),'\n')
- 
-    if show_correlation_matrix == True:
-        plt.matshow(correlation_matrix)
-        plt.show()
- 
+def calculate_indicators(altcoin_data):
+    stock = StockDataFrame.retype(altcoin_data["ETH"])
+    dictionnary = {}
+
+
+    #Moving average
+    dictionnary["Ema_3"] = stock['open_3_ema'] #comme le prix, inconstant
+    dictionnary["Ema_5"] = stock['open_5_ema'] #comme le prix, inconstant
+    dictionnary["Ema_8"] = stock['open_8_ema'] #comme le prix, inconstant
+    dictionnary["Ema_10"] = stock['open_10_ema'] #comme le prix, inconstant
+    dictionnary["Ema_12"] = stock['open_12_ema'] #comme le prix, inconstant
+    dictionnary["Ema_15"] = stock['open_15_ema'] #comme le prix, inconstant
+    dictionnary["Ema_30"] = stock['open_30_ema'] #comme le prix, inconstant
+    dictionnary["Ema_35"] = stock['open_35_ema'] #comme le prix, inconstant
+    dictionnary["Ema_40"] = stock['open_40_ema'] #comme le prix, inconstant
+    dictionnary["Ema_45"] = stock['open_45_ema'] #comme le prix, inconstant
+    dictionnary["Ema_50"] = stock['open_50_ema'] #comme le prix, inconstant
+    dictionnary["Ema_60"] = stock['open_60_ema'] #comme le prix, inconstant
+    dictionnary["Ema_100"] = stock['open_100_ema'] #comme le prix, inconstant
+    dictionnary["Ema_200"] = stock['open_200_ema'] #comme le prix, inconstant
+    ##
+    ###MACD
+    dictionnary["MACD"] = stock['macd'] # -0.003 à 0.003 inconstant
+    dictionnary["MACD"] = stock['macds'] # -0.004 à 0.003 inconstant
+    dictionnary["MACD"] = stock['macdh'] # -0.003 à 0.003 inconstant
+
+    plt.plot(altcoin_data["ETH"]["open"])
+    ###Bollinger bands
+    dictionnary["bollinger"] = stock['boll'] #comme le prix, inconstant
+    dictionnary["bollinger_up"] = stock['boll_ub'] #comme le prix, inconstant
+    dictionnary["bollinger_low"] = stock['boll_lb'] #comme le prix, inconstant
+
+
+
+    #RSI
+    dictionnary["rsi_6"] = stock['rsi_6'] #0 à 100, constant
+    dictionnary["rsi_12"] = stock['rsi_12']  #0 à 100, constant
+
+    #WR
+    dictionnary["wr_10"] = stock['wr_10'] #0 à 100, constant
+    dictionnary["wr_6"] = stock['wr_6'] #0 à 100, constant
+
+    #CCI
+    dictionnary["cci_14"] = stock['cci'] #-600 à 600, constant
+    dictionnary["cci_20"] = stock['cci_20']  #-600 à 600, constant
+
+    # DMA, difference of 10 and 50 moving average
+    dictionnary["dms"] = stock['dma'] #-0.015 à 0.015, inconstant
+
+    # +DI, default to 14 days
+    dictionnary['pdi']= stock['pdi'] # 0 à 100, constant
+    # -DI, default to 14 days
+    dictionnary['mdi']=stock['mdi'] # 0 à 100, constant
+    # DX, default to 14 days of +DI and -DI
+    dictionnary['dx']=stock['dx'] # 0 à 100, constant
+    # ADX, 6 days SMA of DX, same as stock['dx_6_ema']
+    dictionnary['adx']=stock['adx'] # 0 à 100, constant
+    # ADXR, 6 days SMA of ADX, same as stock['adx_6_ema']
+    dictionnary['adxr']=stock['adxr'] # 0 à 100, constant
+
+    # TRIX, default to 12 days
+    dictionnary['trix'] = stock['trix'] #-1 à 1
+    ### MATRIX is the simple moving average of TRIX
+    dictionnary['trix_9_sma'] = stock['trix_9_sma'] #-1 à 1
+
+    # VR, default to 26 days
+    dictionnary['vr'] = stock['vr'] #0 à3500
+    # MAVR is the simple moving average of VR
+    dictionnary['vr_6_sma'] = stock['vr_6_sma'] #0 à 1500
+
+    # CR indicator, including 5, 10, 20 days moving average
+    dictionnary['cr'] = stock['cr'] #0 à 500
+    dictionnary['cr-ma1'] = stock['cr-ma1'] #0 à 500
+    dictionnary['cr-ma2'] = stock['cr-ma2'] #0 à 500
+    dictionnary['cr-ma3'] = stock['cr-ma3'] #0 à 500
+
+
+    # KDJ, default to 9 days
+    dictionnary['kdjk'] = stock['kdjk'] #-20 à 120
+    dictionnary['kdjd'] = stock['kdjd'] #-20 à 120
+    dictionnary['kdjj'] = stock['kdjj'] #-20 à 120
+
+    dictionnary = pd.DataFrame(dictionnary)
+
+
+    for name in dictionnary:
+        plt.plot(dictionnary[name], label = name)
+    plt.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
+    plt.show()
+
+    return dictionnary
     
 #     Partie 2   
 ################################################# On définit les variables ##################################################
@@ -119,27 +199,10 @@ altcoins = ["ETH"]
  
 #     Partie 3
 ################################################# On execute le code ###############################################
-     
 folder, min_lenght = choose_timeframe(pediod)
-
 altcoin_data = alcoin_extract_from_poloniex(altcoins)
-
-plt.plot(altcoin_data["ETH"]["open"])
-
-stock = StockDataFrame.retype(altcoin_data["ETH"])
-for x in range (1,101,5):
-    plt.plot(stock['open_%s_ema' %(x)])
-plt.show()
-
-combined_df = merge_dfs_on_column(list(altcoin_data.values()), list(altcoin_data.keys()), 'close')
-
+combined_df = calculate_indicators(altcoin_data)
 combined_df = combined_df[:]['2016-02-18 00:00:00':'2018-02-01 00:00:00']
+print(combined_df)
 
-#print(combined_df)
-
-if compute_correlation == True:
-    make_correlation_matrix(combined_df, show_correlation_matrix)
-    
- 
- 
 
