@@ -44,7 +44,6 @@ def merge_dfs_on_column(dataframes, labels, col):
         if len(dataframes[index]["close"]) > min_lenght:
             series_dict[labels[index]] = dataframes[index][col]
             altcoins_list.extend([labels[index]])
-         
     return pd.DataFrame(series_dict)
   
   
@@ -81,13 +80,13 @@ def alcoin_extract_from_poloniex(altcoins):
         coinpair = 'BTC_{}'.format(altcoin)
         crypto_price_df = get_crypto_data(coinpair)
         altcoin_data[altcoin] = crypto_price_df
- 
     return altcoin_data
  
 def calculate_indicators(altcoin_data):
     stock = StockDataFrame.retype(altcoin_data["ETH"])
     dictionnary = {}
 
+    dictionnary["open_price"] = altcoin_data["ETH"]["open"]
 
     #Moving average
     dictionnary["Ema_3"] = stock['open_3_ema'] #comme le prix, inconstant
@@ -115,8 +114,6 @@ def calculate_indicators(altcoin_data):
     dictionnary["bollinger"] = stock['boll'] #comme le prix, inconstant
     dictionnary["bollinger_up"] = stock['boll_ub'] #comme le prix, inconstant
     dictionnary["bollinger_low"] = stock['boll_lb'] #comme le prix, inconstant
-
-
 
     #RSI
     dictionnary["rsi_6"] = stock['rsi_6'] #0 à 100, constant
@@ -172,9 +169,31 @@ def calculate_indicators(altcoin_data):
     for name in dictionnary:
         plt.plot(dictionnary[name], label = name)
     plt.legend(bbox_to_anchor=(1, 1), loc=2, borderaxespad=0.)
-    plt.show()
-
+    #plt.show()
     return dictionnary
+
+
+def make_train_test_set(data, number_of_periods_after_x, train_test_ratio):
+    open_price_list = data["open_price"].tolist()
+    data = data.values
+    x_train, y_train, x_test, y_test = [], [], [], []
+    x_train = data[:int(len(data)*train_test_ratio - number_of_periods_after_x)]
+    x_test = data[int(len(data)*train_test_ratio): int(len(data)) - number_of_periods_after_x]
+    for i in range(0, int(len(data)*train_test_ratio - number_of_periods_after_x)):
+        y_train.append(open_price_list[i+1:i+1+int(number_of_periods_after_x)])
+    for i in range(int(len(data)*train_test_ratio),int(len(data)) - number_of_periods_after_x): 
+        y_test.append(open_price_list[i+1:i+1+int(number_of_periods_after_x)])
+    return x_train, x_test, y_train, y_test
+
+
+def calculate_outputs(y_train,y_test):
+    for row in range(len(y_train)):  
+        y_train[row] = [sum(y_train[row])/len(y_train[row])]
+    for row in range(len(y_test)):  
+        y_test[row] = [sum(y_test[row])/len(y_test[row])]
+    y_train = np.array(y_train)
+    y_test = np.array(y_test)
+    return y_train, y_test
     
 #     Partie 2   
 ################################################# On définit les variables ##################################################
@@ -203,6 +222,9 @@ folder, min_lenght = choose_timeframe(pediod)
 altcoin_data = alcoin_extract_from_poloniex(altcoins)
 combined_df = calculate_indicators(altcoin_data)
 combined_df = combined_df[:]['2016-02-18 00:00:00':'2018-02-01 00:00:00']
-print(combined_df)
+x_train, x_test, y_train, y_test = make_train_test_set(data = combined_df, number_of_periods_after_x = 40, train_test_ratio = 0.8)
+y_train, y_test = calculate_outputs(y_train,y_test)
+
+#print(x_train.shape,y_train.shape,x_test.shape,y_test.shape)
 
 
